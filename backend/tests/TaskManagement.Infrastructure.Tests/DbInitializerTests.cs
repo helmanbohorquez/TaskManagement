@@ -56,7 +56,7 @@ public class DbInitializerTests
             var t = (long)(await countTasks.ExecuteScalarAsync())!;
 
             u.Should().Be(1);
-            t.Should().Be(3);
+            t.Should().Be(4);
         }
         finally
         {
