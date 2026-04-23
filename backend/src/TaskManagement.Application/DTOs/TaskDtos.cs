@@ -13,7 +13,8 @@ public record TaskResponse(
     TaskItemStatus Status,
     DateTime DueDate,
     DateTime CreatedAt,
-    DateTime UpdatedAt)
+    DateTime UpdatedAt,
+    bool IsExpired)
 {
     public static TaskResponse FromEntity(TaskItem task) => new(
         task.Id,
@@ -22,5 +23,9 @@ public record TaskResponse(
         task.Status,
         task.DueDate,
         task.CreatedAt,
-        task.UpdatedAt);
+        task.UpdatedAt,
+        IsExpiredOn(task, DateTime.UtcNow));
+
+    private static bool IsExpiredOn(TaskItem task, DateTime nowUtc) =>
+        task.Status != TaskItemStatus.Done && task.DueDate.Date < nowUtc.Date;
 }

@@ -80,10 +80,12 @@ public class DbInitializer
             {
                 TaskItem.Create(user.Id, "Welcome to Task Manager", "Explore the app and create your first task.", DateTime.UtcNow.AddDays(1)),
                 TaskItem.Create(user.Id, "Write weekly report", "Summarize progress and blockers.", DateTime.UtcNow.AddDays(3)),
-                TaskItem.Create(user.Id, "Plan sprint demo", "Prepare slides and recording.", DateTime.UtcNow.AddDays(5))
+                TaskItem.Create(user.Id, "Plan sprint demo", "Prepare slides and recording.", DateTime.UtcNow.AddDays(5)),
+                TaskItem.Create(user.Id, "Renew domain name", "Started last sprint, still not finished.", DateTime.UtcNow.AddDays(-3))
             };
             seedTasks[1].ChangeStatus(TaskItemStatus.InProgress);
             seedTasks[2].ChangeStatus(TaskItemStatus.Done);
+            seedTasks[3].ChangeStatus(TaskItemStatus.InProgress);
 
             foreach (var t in seedTasks)
             {

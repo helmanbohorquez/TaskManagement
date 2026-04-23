@@ -21,6 +21,8 @@ public class UpdateTaskRequestValidator : AbstractValidator<UpdateTaskRequest>
                 .WithMessage("Due date cannot be in the past.");
 
         RuleFor(x => x.Status)
-            .IsInEnum().WithMessage("Invalid status.");
+            .IsInEnum().WithMessage("Invalid status.")
+            .NotEqual(TaskItemStatus.Expired)
+                .WithMessage("Expired is a computed status and cannot be set manually.");
     }
 }

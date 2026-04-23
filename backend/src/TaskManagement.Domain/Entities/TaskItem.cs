@@ -78,6 +78,8 @@ public class TaskItem
     {
         if (!Enum.IsDefined(status))
             throw new DomainException($"Unknown status '{status}'.");
+        if (status == TaskItemStatus.Expired)
+            throw new DomainException("Expired is a computed status and cannot be set manually.");
 
         Status = status;
         UpdatedAt = DateTime.UtcNow;

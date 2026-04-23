@@ -1,36 +1,34 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import api from '../api/client.js'
-import TaskCard from '../components/TaskCard.jsx'
+import BoardColumn from '../components/BoardColumn.jsx'
 import TaskForm from '../components/TaskForm.jsx'
 
-const FILTERS = [
-  { id: 'all', label: 'All' },
-  { id: 'Pending', label: 'Pending' },
-  { id: 'InProgress', label: 'In progress' },
-  { id: 'Done', label: 'Done' }
+const COLUMNS = [
+  { status: 'Pending', title: 'To do' },
+  { status: 'InProgress', title: 'In progress' },
+  { status: 'Done', title: 'Done' }
 ]
 
 export default function Tasks() {
   const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [filter, setFilter] = useState('all')
   const [formOpen, setFormOpen] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
+  const [draggingTaskId, setDraggingTaskId] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
     setError('')
     try {
-      const params = filter === 'all' ? {} : { status: filter }
-      const { data } = await api.get('/api/tasks', { params })
+      const { data } = await api.get('/api/tasks')
       setTasks(data)
     } catch (err) {
       setError(err?.response?.data?.message || 'Failed to load tasks.')
     } finally {
       setLoading(false)
     }
-  }, [filter])
+  }, [])
 
   useEffect(() => {
     load()
@@ -70,21 +68,50 @@ export default function Tasks() {
     setTasks((prev) => prev.filter((t) => t.id !== task.id))
   }
 
-  const stats = useMemo(() => {
-    const counts = { total: tasks.length, Pending: 0, InProgress: 0, Done: 0 }
-    tasks.forEach((t) => {
-      if (counts[t.status] !== undefined) counts[t.status] += 1
-    })
-    return counts
+  const handleMoveTask = useCallback(async (taskId, newStatus) => {
+    // Always clear the drag state: the source card usually unmounts on the
+    // optimistic re-render, so its `dragend` event never fires.
+    setDraggingTaskId(null)
+
+    const current = tasks.find((t) => t.id === taskId)
+    if (!current || current.status === newStatus) return
+
+    const previous = tasks
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+    )
+
+    try {
+      const { data } = await api.put(`/api/tasks/${taskId}`, {
+        title: current.title,
+        description: current.description,
+        dueDate: current.dueDate,
+        status: newStatus
+      })
+      setTasks((prev) => prev.map((t) => (t.id === data.id ? data : t)))
+    } catch (err) {
+      setTasks(previous)
+      setError(err?.response?.data?.message || 'Failed to move task.')
+    }
   }, [tasks])
 
+  const tasksByStatus = useMemo(() => {
+    const groups = { Pending: [], InProgress: [], Done: [] }
+    tasks.forEach((t) => {
+      if (groups[t.status]) groups[t.status].push(t)
+    })
+    return groups
+  }, [tasks])
+
+  const totalCount = tasks.length
+
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold">Your tasks</h1>
+          <h1 className="text-2xl font-semibold">Your board</h1>
           <p className="text-sm text-slate-600">
-            {stats.total} total &middot; {stats.Pending} pending &middot; {stats.InProgress} in progress &middot; {stats.Done} done
+            {totalCount} total &middot; drag cards between columns to change status
           </p>
         </div>
         <button
@@ -95,35 +122,40 @@ export default function Tasks() {
         </button>
       </div>
 
-      <div className="flex gap-2 mb-4 flex-wrap">
-        {FILTERS.map((f) => (
+      {error && (
+        <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          <span>{error}</span>
           <button
-            key={f.id}
-            onClick={() => setFilter(f.id)}
-            className={
-              'px-3 py-1.5 rounded-full text-sm border transition ' +
-              (filter === f.id
-                ? 'bg-brand-500 text-white border-brand-500'
-                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50')
-            }
+            onClick={() => setError('')}
+            className="text-rose-500 hover:text-rose-700"
+            aria-label="Dismiss error"
           >
-            {f.label}
+            &times;
           </button>
-        ))}
-      </div>
-
-      {error && <p className="mb-4 text-sm text-rose-600">{error}</p>}
+        </div>
+      )}
 
       {loading ? (
         <p className="text-slate-500">Loading...</p>
-      ) : tasks.length === 0 ? (
+      ) : totalCount === 0 ? (
         <div className="rounded-lg border border-dashed border-slate-300 p-10 text-center text-slate-500">
           No tasks yet. Click "New task" to create one.
         </div>
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {tasks.map((t) => (
-            <TaskCard key={t.id} task={t} onEdit={openEdit} onDelete={handleDelete} />
+        <div className="grid gap-4 md:grid-cols-3">
+          {COLUMNS.map((col) => (
+            <BoardColumn
+              key={col.status}
+              status={col.status}
+              title={col.title}
+              tasks={tasksByStatus[col.status]}
+              draggingTaskId={draggingTaskId}
+              onDropTask={handleMoveTask}
+              onDragStartTask={(task) => setDraggingTaskId(task.id)}
+              onDragEndTask={() => setDraggingTaskId(null)}
+              onEditTask={openEdit}
+              onDeleteTask={handleDelete}
+            />
           ))}
         </div>
       )}

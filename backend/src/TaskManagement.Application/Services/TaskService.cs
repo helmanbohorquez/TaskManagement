@@ -24,6 +24,18 @@ public class TaskService : ITaskService
 
     public async Task<IReadOnlyList<TaskResponse>> ListAsync(Guid userId, TaskItemStatus? status, CancellationToken ct = default)
     {
+        // Expired is not a stored value, so a DB filter by status=Expired would
+        // return nothing. Fetch all tasks and filter in memory by the same rule
+        // TaskResponse.FromEntity uses (not Done and due date in the past).
+        if (status == TaskItemStatus.Expired)
+        {
+            var all = await _repository.ListByUserAsync(userId, null, ct);
+            return all
+                .Select(TaskResponse.FromEntity)
+                .Where(t => t.IsExpired)
+                .ToList();
+        }
+
         var tasks = await _repository.ListByUserAsync(userId, status, ct);
         return tasks.Select(TaskResponse.FromEntity).ToList();
     }
