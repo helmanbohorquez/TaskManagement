@@ -2,6 +2,8 @@
 
 A full-stack task-management app built for the .NET technical exercise. The backend is ASP.NET Core Web API with Clean Architecture and TDD, hand-rolled ADO.NET against SQLite, BCrypt password hashing, and JWT bearer authentication. The frontend is a React + Vite SPA styled with Tailwind.
 
+> **Start here:** [`docs/approach.md`](docs/approach.md) — the thought process behind the exercise (how I read the spec, the decisions and trade-offs I made, problems I hit, and what I'd do with more time).
+
 > **Constraints respected:** no Entity Framework, no Dapper, no MediatR.
 
 ## Features
@@ -118,6 +120,7 @@ dotnet test TaskManagement.slnx
 
 ## Documents
 
+- [Approach & thought process](docs/approach.md) - narrative write-up of how the exercise was tackled (decisions, trade-offs, problems, what I'd improve).
 - [User story](docs/user-story.md)
 - [Architecture](docs/architecture.md)
 - [Generative AI section](docs/genai-section.md) - required write-up on prompt, validation, improvements, and edge cases.
